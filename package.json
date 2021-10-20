@@ -1,0 +1,23 @@
+{
+  "name": "cab432a2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GucciTofu/CAB432A2.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GucciTofu/CAB432A2/issues"
+  },
+  "homepage": "https://github.com/GucciTofu/CAB432A2#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "nodejs": "0.0.0"
+  }
+}
