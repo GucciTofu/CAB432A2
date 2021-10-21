@@ -6,7 +6,7 @@ const app = express();
 
 app.get('/',function(req,res)
 {
-    res.sendfile('index.html');
+    res.sendFile(__dirname+'/index.html');
 })
 app.listen(port, function () {
     console.log(`Express app listening at http://${hostname}:${port}/`);

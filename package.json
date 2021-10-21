@@ -18,6 +18,7 @@
   "homepage": "https://github.com/GucciTofu/CAB432A2#readme",
   "dependencies": {
     "express": "^4.17.1",
-    "nodejs": "0.0.0"
+    "nodejs": "0.0.0",
+    "twitter": "^1.7.1"
   }
 }
