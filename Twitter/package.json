@@ -17,8 +17,10 @@
   },
   "homepage": "https://github.com/GucciTofu/CAB432A2#readme",
   "dependencies": {
+    "aws-sdk": "^2.1013.0",
     "express": "^4.17.1",
     "nodejs": "0.0.0",
+    "request": "^2.88.2",
     "twitter": "^1.7.1"
   }
 }
