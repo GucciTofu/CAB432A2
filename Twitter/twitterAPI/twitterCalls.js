@@ -1,20 +1,20 @@
 var twitter = require('twitter')
 //environment variables 
 var client = new twitter({
-    consumer_key: process.env.TWITTER_CONSUMER_KEY,
-    consumer_secret: process.env.TWITTER_CONSUMER_KEY,
-    bearer_token: provess.env.TWITTER_BEARER_TOKEN
+    consumer_key: 'eomXjAtG9ELOFM7KRXUl0ZabS',
+    consumer_secret: 'mzy5CZy1HPFnuVsHWc6J1hbszQRooaWzSyrPqTMzqwecznLWhU',
+    //bearer_token: 'AAAAAAAAAAAAAAAAAAAAACePUQEAAAAAdQv3bJbg9z1sXV345TBa0sU6QHo%3DPAQeYtvkSgjUlP1jLkqXqpS0yxB7wSrUsQzpMG8erxToObemvS',
+    access_token_key: '1444840817797959680-9nFkwdTzyKRXsZNq9ksyNcgaTHNjkh',
+    access_token_secret: 'tX1BmWK3B19S6QFp4Gi5HIQ3TNoummchvp5DBitezfnEn'
 });
 
 
-//twitter stream code, track = what to stream based on keyword
-var stream = client.stream('status/filer',{track:'basketball'});
-stream.on('data', function(event)
-{
-    console.log(event && event.text)
-});
-
-stream.on('error', function(error)
-{
-    throw error;
-})
+client.stream('statuses/filter', {track: 'twitter'},  function(stream) {
+    stream.on('data', function(tweet) {
+      console.log(tweet.text);
+    });
+  
+    stream.on('error', function(error) {
+      console.log(error);
+    });
+  });
