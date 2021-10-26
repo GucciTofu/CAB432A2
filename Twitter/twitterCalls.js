@@ -1,6 +1,9 @@
 var twitter = require('twitter');
 var AWS = require('aws-sdk');
 var express = require('express');
+var Analyser = require('natural').SentimentAnalyzer;
+var stemmer = require('natural').PorterStemmer;
+var compromise = require('compromise');
 // var request = require('request');
 // var s3stream = require('stream');
 //var s3 = require('s3.js');
@@ -40,18 +43,17 @@ bucketPromise.then(function(data) {
 // })
 
 
-//Instantiate AWS S3 Server
+//Vars for S3 and Tweet stream (placeholders for now)
 var s3Key = "twitter";
 let responseJSON;
 var i = 0;
-
+//Get tweets from Twitter stream then store in S3.
 module.exports = {
 getStream: function(){
 client.stream('statuses/filter',{track:'sports'},function(stream) {
   stream.on('data', function(tweet) {
-    console.log('test')
-    UploadToS3(tweet.text, i);
-    console.log(tweet.text);
+    //UploadToS3(tweet.text, i);
+    console.log("\n\n\n---------------------------\n" + tweet.text + "\n---------------------------");
     i++;
   });
 
@@ -61,6 +63,8 @@ client.stream('statuses/filter',{track:'sports'},function(stream) {
 });},
 
 }
+
+//Function that handles the storing to S3
 function UploadToS3(data, integer) { 
   //Store in S3
   responseJSON = data;
@@ -68,10 +72,19 @@ function UploadToS3(data, integer) {
   const objectParams = {Bucket: bucketName, Key: integer.toString(), Body: data};
   const uploadPromise = new AWS.S3({apiVersion: '2006-03-01'}).putObject(objectParams).promise();
   uploadPromise.then(function(data) {
-      //console.log("Successfully uploaded data to " + bucketName + "/" + s3Key);
+      console.log("Successfully uploaded data to " + bucketName + "/" + s3Key);
   });
-  //console.log("Stored in S3 from Twitter Stream");
 }
+
+//Sentiment analysis
+
+//Instantiating Analyser
+var analyser = new Analyser("English", stemmer, "afinn");
+var sampleText = ["I", "hate", "this", "game!"];
+
+//Analyse
+console.log(analyser.getSentiment(sampleText));
+
 
 
 
