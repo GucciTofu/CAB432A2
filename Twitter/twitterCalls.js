@@ -1,6 +1,6 @@
 var twitter = require('twitter');
 var AWS = require('aws-sdk');
-// var express = require('express');
+var express = require('express');
 // var request = require('request');
 // var s3stream = require('stream');
 //var s3 = require('s3.js');
@@ -22,25 +22,34 @@ var client = new twitter({
 // Create unique bucket name
 const bucketName = 'petercab432-assignment2';
 
-// Create a promise on S3 service object
+// // Create a promise on S3 service object
+function createBucket(){
 const bucketPromise = new AWS.S3({apiVersion: '2006-03-01'}).createBucket({Bucket: bucketName}).promise();
 bucketPromise.then(function(data) {
     console.log("Successfully created " + bucketName);
 })
 .catch(function(err) {
     console.error(err, err.stack);
-});
+    console.log('unable to create bucket')
+});}
 
+// client.get('trends/place',{id: '23424748',}, function(error,trend,response)
+// {
+//   console.log(trend[0])
+
+// })
 
 
 //Instantiate AWS S3 Server
-
 var s3Key = "twitter";
 let responseJSON;
 var i = 0;
 
+module.exports = {
+getStream: function(){
 client.stream('statuses/filter',{track:'sports'},function(stream) {
   stream.on('data', function(tweet) {
+    console.log('test')
     UploadToS3(tweet.text, i);
     console.log(tweet.text);
     i++;
@@ -49,7 +58,9 @@ client.stream('statuses/filter',{track:'sports'},function(stream) {
   stream.on('error', function(error) {
     console.log(error);
   });
-});
+});},
+
+}
 function UploadToS3(data, integer) { 
   //Store in S3
   responseJSON = data;
