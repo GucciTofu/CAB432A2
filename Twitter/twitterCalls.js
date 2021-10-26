@@ -44,16 +44,19 @@ bucketPromise.then(function(data) {
 
 
 //Vars for S3 and Tweet stream (placeholders for now)
-var s3Key = "twitter";
 let responseJSON;
-var i = 0;
+
 //Get tweets from Twitter stream then store in S3.
 module.exports = {
 getStream: function(){
+var i = 0;
+var s3Key = "twitter";
+var cleanedTweet;
 client.stream('statuses/filter',{track:'sports'},function(stream) {
   stream.on('data', function(tweet) {
+    cleanedTweet = compromise(tweet.text).normalize().out('text').not('#HashTag');   
     //UploadToS3(tweet.text, i);
-    console.log("\n\n\n---------------------------\n" + tweet.text + "\n---------------------------");
+    console.log("\n\n\n---------------------------\n" + cleanedTweet + "\n---------------------------");
     i++;
   });
 
