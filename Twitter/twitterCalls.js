@@ -54,9 +54,11 @@ var s3Key = "twitter";
 var cleanedTweet;
 client.stream('statuses/filter',{track:'sports'},function(stream) {
   stream.on('data', function(tweet) {
-    cleanedTweet = compromise(tweet.text).normalize().out('text').not('#HashTag');   
+    // cleanedTweet = compromise(tweet.text).normalize().out('text');   
+    cleanedTweet = compromise(tweet.text);
+    cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').out();
     //UploadToS3(tweet.text, i);
-    console.log("\n\n\n---------------------------\n" + cleanedTweet + "\n---------------------------");
+    console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n---------------------------");
     i++;
   });
 
