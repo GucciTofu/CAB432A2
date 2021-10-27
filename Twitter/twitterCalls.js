@@ -42,6 +42,15 @@ bucketPromise.then(function(data) {
 
 // })
 
+//Sentiment analysis
+
+//Instantiating Analyser
+var analyser = new Analyser("English", stemmer, "afinn");
+// var sampleText = ["I", "hate", "this", "game!"];
+
+//Analyse
+// console.log(analyser.getSentiment(sampleText));
+
 
 //Vars for S3 and Tweet stream (placeholders for now)
 let responseJSON;
@@ -52,13 +61,15 @@ getStream: function(){
 var i = 0;
 var s3Key = "twitter";
 var cleanedTweet;
-client.stream('statuses/filter',{track:'sports'},function(stream) {
+var tweetSentiment;
+client.stream('statuses/filter',{track:'cats', language:'en'},function(stream) {
   stream.on('data', function(tweet) {
     // cleanedTweet = compromise(tweet.text).normalize().out('text');   
     cleanedTweet = compromise(tweet.text);
-    cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').out();
+    cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').not("RT").not('#Time').not('#Date').not('#Expression').not('#PhoneNumber').not('#Money').normalize().text('reduced');
+    tweetSentiment = analyser.getSentiment(cleanedTweet);
     //UploadToS3(tweet.text, i);
-    console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n---------------------------");
+    console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n*** " + tweetSentiment + "\n---------------------------");
     i++;
   });
 
@@ -81,14 +92,7 @@ function UploadToS3(data, integer) {
   });
 }
 
-//Sentiment analysis
 
-//Instantiating Analyser
-var analyser = new Analyser("English", stemmer, "afinn");
-var sampleText = ["I", "hate", "this", "game!"];
-
-//Analyse
-console.log(analyser.getSentiment(sampleText));
 
 
 
