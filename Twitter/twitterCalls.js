@@ -61,15 +61,17 @@ getStream: function(){
 var i = 0;
 var s3Key = "twitter";
 var cleanedTweet;
+var cleanedTweetArray;
 var tweetSentiment;
-client.stream('statuses/filter',{track:'cats', language:'en'},function(stream) {
+client.stream('statuses/filter',{track:'sports', language:'en'},function(stream) {
   stream.on('data', function(tweet) {
     // cleanedTweet = compromise(tweet.text).normalize().out('text');   
     cleanedTweet = compromise(tweet.text);
     cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').not("RT").not('#Time').not('#Date').not('#Expression').not('#PhoneNumber').not('#Money').normalize().text('reduced');
-    tweetSentiment = analyser.getSentiment(cleanedTweet);
+    cleanedTweetArray = cleanedTweet.split(" ");
+    tweetSentiment = analyser.getSentiment(cleanedTweetArray);
     //UploadToS3(tweet.text, i);
-    console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n*** " + tweetSentiment + "\n---------------------------");
+    console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
     i++;
   });
 
