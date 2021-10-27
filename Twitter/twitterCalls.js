@@ -3,6 +3,7 @@ var AWS = require('aws-sdk');
 var express = require('express');
 var Analyser = require('natural').SentimentAnalyzer;
 var stemmer = require('natural').PorterStemmer;
+const fs = require('fs');
 var compromise = require('compromise');
 // var request = require('request');
 // var s3stream = require('stream');
@@ -54,16 +55,19 @@ var analyser = new Analyser("English", stemmer, "afinn");
 
 //Vars for S3 and Tweet stream (placeholders for now)
 let responseJSON;
-
+var x = 1;
+var sentimentAvg =0;
 //Get tweets from Twitter stream then store in S3.
+//setInterval(writeJson,2000);
 module.exports = {
-getStream: function(){
-var i = 0;
+getStream: function(query){
+var i = 1;
 var s3Key = "twitter";
 var cleanedTweet;
 var cleanedTweetArray;
 var tweetSentiment;
-client.stream('statuses/filter',{track:'sports', language:'en'},function(stream) {
+setInterval(writeJson,1000)
+client.stream('statuses/filter',{track:query, language:'en'},function(stream) {
   stream.on('data', function(tweet) {
     // cleanedTweet = compromise(tweet.text).normalize().out('text');   
     cleanedTweet = compromise(tweet.text);
@@ -73,15 +77,66 @@ client.stream('statuses/filter',{track:'sports', language:'en'},function(stream)
     //UploadToS3(tweet.text, i);
     console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
     i++;
+    getAverage(tweetSentiment);
   });
-
   stream.on('error', function(error) {
     console.log(error);
   });
-});},
+});
+},
+
+}
+var sentimentArray = [];
+function getAverage(number)
+{
+  if(number <0)
+  {
+    number = -1
+    sentimentArray.push(number);
+  }
+  else if (number > 0)
+  {
+    number = 1
+    sentimentArray.push(number);
+  }
+  else if (number == 0)
+  {
+    number = 0;
+    sentimentArray.push(number);
+  }
+  console.log(number)
+  
+  var sum = 0;
+  for(var i = 0; i < sentimentArray.length; i++)
+  {
+    sum += sentimentArray[i]
+  }
+  sentimentAvg = sum/sentimentArray.length
+
+  if(sentimentAvg <0)
+  {
+    sentimentAvg = -1
+    //sentimentArray.push(number);
+  }
+  else if (number > 0)
+  {
+    sentimentAvg = 1
+    //sentimentArray.push(number);
+  }
+  else if (number == 0)
+  {
+    sentimentAvg = 0;
+    //sentimentArray.push(number);
+  }
 
 }
 
+function writeJson()
+{
+  fs.writeFileSync('test.json','[['+x+','+JSON.stringify(sentimentAvg)+']]');
+  x++
+  console.log(sentimentAvg);
+}
 //Function that handles the storing to S3
 function UploadToS3(data, integer) { 
   //Store in S3

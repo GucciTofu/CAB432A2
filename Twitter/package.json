@@ -21,6 +21,8 @@
     "compromise": "^13.11.4",
     "express": "^4.17.1",
     "natural": "^5.1.1",
+    "fs": "0.0.1-security",
+    "node-fetch": "^3.0.0",
     "nodejs": "0.0.0",
     "request": "^2.88.2",
     "twitter": "^1.7.1"

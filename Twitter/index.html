@@ -2,14 +2,77 @@
 <html>
     <head>
         <title>CAB432 A2</title>
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+        
+
     </head>
     <body>
-        <form>
-            <input type='text' placeholder="Hashtag">
-            <input type='submit' value='search' formaction="/search">
+        <script>
+            window.onload = function() {
+                // $.ajax({
+                //     dataType: "json",
+                //     url: '/data',
+                //     });
+
+var dataPoints = [];
+
+var options = {
+	theme: "light2",
+	title: {
+		text: "Live Data"
+	},
+	data: [{
+		type: "line",
+		dataPoints: dataPoints
+	}],
+	axisY:{
+   maximum: 2,
+   minimum:-2,
+   valueFormatString:"###0.00",
+ }
+};
+$("#chartContainer").CanvasJSChart(options);
+updateData();
+
+// Initial Values
+var xValue = 0;
+var yValue = 0;
+var newDataCount = 0;
+function addData(data) {
+	if(newDataCount != 1) {
+		$.each(data, function(key, value) {
+			dataPoints.push({x: value[0], y: parseInt(value[1])});
+			xValue++;
+			yValue = parseInt(value[1]);
+		});
+	} else {
+		//dataPoints.shift();
+		dataPoints.push({x: data[0][0], y: parseInt(data[0][1])});
+		xValue++;
+		yValue = parseInt(data[0][1]);
+	}
+  
+	newDataCount = 1;
+  
+	$("#chartContainer").CanvasJSChart().render()
+	setTimeout(updateData, 3000);	
+}
+
+function updateData() {
+	$.getJSON("/data", addData);
+}
+
+}
+        </script>
+        <form method = 'POST' action = '/'>
+            <input type='text' placeholder="Hashtag" id = 'query' name = 'query'>
+            <input type='submit' value='submit' formaction="/search">
         </form>
         <div id='popular'>
             <p>Current Trending Hashtags</p>
         </div>
+        <div id="chartContainer" style="height: 370px; width: 100%;"></div>
+        <script src="https://canvasjs.com/assets/script/jquery-1.11.1.min.js"></script>
+    <script src="https://canvasjs.com/assets/script/jquery.canvasjs.min.js"></script>
     </body>
 </html>
