@@ -162,6 +162,70 @@ function UploadToRedis(data, keyName) {
 }
 
 
+// Redis -> S3 -> API
+function PersistanceRetrieval(keyName) {
+
+      // Checks Redis Cache
+      return redisClient.get(keyName, (err, redisResult) => {
+        if (redisResult) {
+            // Serve results from Redis
+            resultJSON = JSON.parse(redisResult);
+            return res.status(200).json(resultJSON);
+        } else { //Serve from S3, if it's in S3 store it in Cache too
+            return new AWS.S3({apiVersion: '2006-03-01'}).getObject(params, (err, s3Result) => {
+                if (s3Result) {
+                    // Retrieve from S3
+                    //console.log(result);
+                    console.log("Successfully retrieved from S3")
+                    resultJSON = JSON.parse(s3Result.Body);
+                    //console.log(resultJSON);
+
+                    
+                    //Store in cache while we're here
+                    //resultJSON.source = "Redis Cache";
+                    redisClient.setex(keyName, 3600, JSON.stringify({ ...resultJSON, source: 'Redis Cache', }));
+                    console.log("Stored in Redis from S3 call");
+
+                    //Serve results from S3
+                    return res.status(200).json(resultJSON);
+        
+                } else { //It's not in Cache and S3, time to retrieve from wikipedia
+
+                        // Retrieving from Wikipedia 
+                        return axios.get(searchUrl)
+                            .then(urlResult => {
+                                responseJSON = urlResult.data;
+                                //Store in cache
+                                redisClient.setex(keyName, 3600, JSON.stringify({ source: 'Redis Cache', ...responseJSON, }));
+                                console.log("Stored in Redis from Wikipedia call");
+                                
+
+                                //Store in S3
+                                const body = JSON.stringify({ source: 'S3 Bucket', ...responseJSON});
+                                const objectParams = {Bucket: bucketName, Key: keyName, Body: body};
+                                const uploadPromise = new AWS.S3({apiVersion: '2006-03-01'}).putObject(objectParams).promise();
+                                uploadPromise.then(function(data) {
+                                    console.log("Successfully uploaded data to " + bucketName + "/" + keyName);
+                                });
+                                console.log("Stored in S3 from Wikipedia call");
+                                
+                                console.log("Successfully retreived from Wikipedia");
+                                //Output saying retrieveal is from Wikipedia
+                                return res.status(200).json({ source: 'Wikipedia API', ...responseJSON, });
+
+                            })
+                            .catch(err => {
+                                return res.json(err);
+                            });
+
+                }
+            })
+        }
+    });
+  
+}
+
+
 
 
 
