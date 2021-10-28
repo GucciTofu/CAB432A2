@@ -62,7 +62,6 @@ var sentimentAvg =0;
 module.exports = {
 getStream: function(query){
 var i = 1;
-var s3Key = "twitter";
 var cleanedTweet;
 var cleanedTweetArray;
 var tweetSentiment;
@@ -74,7 +73,7 @@ client.stream('statuses/filter',{track:query, language:'en'},function(stream) {
     cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').not("RT").not('#Time').not('#Date').not('#Expression').not('#PhoneNumber').not('#Money').normalize().text('reduced');
     cleanedTweetArray = cleanedTweet.split(" ");
     tweetSentiment = analyser.getSentiment(cleanedTweetArray);
-    //UploadToS3(tweet.text, i);
+    UploadToS3(cleanedTweet, query + i);
     console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
     i++;
     getAverage(tweetSentiment);
@@ -138,14 +137,14 @@ function writeJson()
   console.log(sentimentAvg);
 }
 //Function that handles the storing to S3
-function UploadToS3(data, integer) { 
+function UploadToS3(data, keyName) { 
   //Store in S3
   responseJSON = data;
   //const body = JSON.stringify({ source: 'S3 Bucket', ...responseJSON});
-  const objectParams = {Bucket: bucketName, Key: integer.toString(), Body: data};
+  const objectParams = {Bucket: bucketName, Key: keyName.toString(), Body: data};
   const uploadPromise = new AWS.S3({apiVersion: '2006-03-01'}).putObject(objectParams).promise();
   uploadPromise.then(function(data) {
-      console.log("Successfully uploaded data to " + bucketName + "/" + s3Key);
+      console.log("Successfully uploaded data to " + bucketName + "/" + keyName);
   });
 }
 
