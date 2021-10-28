@@ -5,6 +5,7 @@ var Analyser = require('natural').SentimentAnalyzer;
 var stemmer = require('natural').PorterStemmer;
 const fs = require('fs');
 var compromise = require('compromise');
+const redis = require('redis');
 // var request = require('request');
 // var s3stream = require('stream');
 //var s3 = require('s3.js');
@@ -20,6 +21,12 @@ var client = new twitter({
 });
 
 
+
+// Create Redis Client - This section will change for Cloud Services
+const redisClient = redis.createClient();
+redisClient.on('error', (err) => {
+    console.log("Error " + err);
+});
 
 
 // Cloud Services Set-up
@@ -73,6 +80,7 @@ client.stream('statuses/filter',{track:query, language:'en'},function(stream) {
     cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').not("RT").not('#Time').not('#Date').not('#Expression').not('#PhoneNumber').not('#Money').normalize().text('reduced');
     cleanedTweetArray = cleanedTweet.split(" ");
     tweetSentiment = analyser.getSentiment(cleanedTweetArray);
+    UploadToRedis(cleanedTweet, query + i);
     UploadToS3(cleanedTweet, query + i);
     console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
     i++;
@@ -139,13 +147,18 @@ function writeJson()
 //Function that handles the storing to S3
 function UploadToS3(data, keyName) { 
   //Store in S3
-  responseJSON = data;
+  //responseJSON = data;
   //const body = JSON.stringify({ source: 'S3 Bucket', ...responseJSON});
   const objectParams = {Bucket: bucketName, Key: keyName.toString(), Body: data};
   const uploadPromise = new AWS.S3({apiVersion: '2006-03-01'}).putObject(objectParams).promise();
   uploadPromise.then(function(data) {
-      console.log("Successfully uploaded data to " + bucketName + "/" + keyName);
+      console.log("Successfully uploaded data to S3: " + bucketName + "/" + keyName);
   });
+}
+
+function UploadToRedis(data, keyName) {
+  redisClient.setex(keyName, 3600, JSON.stringify({ ...data, source: 'Redis Cache', }));
+  console.log("Successfully uploaded data to Redis " + keyName);
 }
 
 
