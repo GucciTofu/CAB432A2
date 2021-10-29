@@ -23,10 +23,10 @@ var client = new twitter({
 
 
 // Create Redis Client - This section will change for Cloud Services
-const redisClient = redis.createClient();
-redisClient.on('error', (err) => {
-    console.log("Error " + err);
-});
+// const redisClient = redis.createClient();
+// redisClient.on('error', (err) => {
+//     console.log("Error " + err);
+// });
 
 
 // Cloud Services Set-up
@@ -65,6 +65,8 @@ var analyser = new Analyser("English", stemmer, "afinn");
 let responseJSON;
 var x = 1;
 var sentimentAvg =0;
+var close = 0;
+var timer = null;
 //Get tweets from Twitter stream then store in S3.
 //setInterval(writeJson,2000);
 module.exports = {
@@ -73,25 +75,41 @@ var i = 1;
 var cleanedTweet;
 var cleanedTweetArray;
 var tweetSentiment;
-setInterval(writeJson,1000)
-// client.stream('statuses/filter',{track:query, language:'en'},function(stream) {
-//   stream.on('data', function(tweet) {
-//     // cleanedTweet = compromise(tweet.text).normalize().out('text');   
-//     cleanedTweet = compromise(tweet.text);
-//     cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').not("RT").not('#Time').not('#Date').not('#Expression').not('#PhoneNumber').not('#Money').normalize().text('reduced');
-//     cleanedTweetArray = cleanedTweet.split(" ");
-//     tweetSentiment = analyser.getSentiment(cleanedTweetArray);
-//     UploadToRedis(cleanedTweet, query + i);
-//     UploadToS3(cleanedTweet, query + i);
-//     console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
-//     i++;
-//     getAverage(tweetSentiment);
-//   });
-//   stream.on('error', function(error) {
-//     console.log(error);
-//   });
-// });
+close = 0;
+
+timer = setInterval(writeJson,1000)
+client.stream('statuses/filter',{track:query, language:'en'},function(stream) {
+  if(close == 0){
+  stream.on('data', function(tweet) {
+    // cleanedTweet = compromise(tweet.text).normalize().out('text');   
+    cleanedTweet = compromise(tweet.text);
+    cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').not("RT").not('#Time').not('#Date').not('#Expression').not('#PhoneNumber').not('#Money').normalize().text('reduced');
+    cleanedTweetArray = cleanedTweet.split(" ");
+    tweetSentiment = analyser.getSentiment(cleanedTweetArray);
+    //UploadToRedis(cleanedTweet, query + i);
+    //UploadToS3(cleanedTweet, query + i);
+    console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
+    i++;
+    getAverage(tweetSentiment);
+    if (close == 1)
+    {
+      stream.destroy();
+      console.log('Stream Closed')
+    }
+  });
+
+  stream.on('error', function(error) {
+    console.log(error);
+  });
   PersistanceRetrieval(query);
+}});
+},
+
+closeStream: function()
+{
+  clearInterval(timer)
+  close = 1;
+  x =1;
 },
 
 }

@@ -2,9 +2,7 @@
 <html>
     <head>
         <title>CAB432 A2</title>
-        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-        
-
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>    
     </head>
     <body>
         <script>
@@ -65,8 +63,9 @@ function updateData() {
 }
         </script>
         <form method = 'POST' action = '/'>
-            <input type='text' placeholder="Hashtag" id = 'query' name = 'query'>
-            <input type='submit' value='submit' formaction="/search">
+            <input type='text' placeholder="Hashtag" id = 'query' name = 'query' required>
+            <input type='submit' value='search' formaction="/search">
+            <input type = 'submit' value='close' formaction="/close">
         </form>
         <div id='popular'>
             <p>Current Trending Hashtags</p>
