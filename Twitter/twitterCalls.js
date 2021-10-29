@@ -44,6 +44,7 @@ bucketPromise.then(function(data) {
     console.log('unable to create bucket')
 });}
 
+
 // client.get('trends/place',{id: '23424748',}, function(error,trend,response)
 // {
 //   console.log(trend[0])
@@ -73,23 +74,24 @@ var cleanedTweet;
 var cleanedTweetArray;
 var tweetSentiment;
 setInterval(writeJson,1000)
-client.stream('statuses/filter',{track:query, language:'en'},function(stream) {
-  stream.on('data', function(tweet) {
-    // cleanedTweet = compromise(tweet.text).normalize().out('text');   
-    cleanedTweet = compromise(tweet.text);
-    cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').not("RT").not('#Time').not('#Date').not('#Expression').not('#PhoneNumber').not('#Money').normalize().text('reduced');
-    cleanedTweetArray = cleanedTweet.split(" ");
-    tweetSentiment = analyser.getSentiment(cleanedTweetArray);
-    UploadToRedis(cleanedTweet, query + i);
-    UploadToS3(cleanedTweet, query + i);
-    console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
-    i++;
-    getAverage(tweetSentiment);
-  });
-  stream.on('error', function(error) {
-    console.log(error);
-  });
-});
+// client.stream('statuses/filter',{track:query, language:'en'},function(stream) {
+//   stream.on('data', function(tweet) {
+//     // cleanedTweet = compromise(tweet.text).normalize().out('text');   
+//     cleanedTweet = compromise(tweet.text);
+//     cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').not("RT").not('#Time').not('#Date').not('#Expression').not('#PhoneNumber').not('#Money').normalize().text('reduced');
+//     cleanedTweetArray = cleanedTweet.split(" ");
+//     tweetSentiment = analyser.getSentiment(cleanedTweetArray);
+//     UploadToRedis(cleanedTweet, query + i);
+//     UploadToS3(cleanedTweet, query + i);
+//     console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\n<--->\nCleaned: \n" + cleanedTweet + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
+//     i++;
+//     getAverage(tweetSentiment);
+//   });
+//   stream.on('error', function(error) {
+//     console.log(error);
+//   });
+// });
+  PersistanceRetrieval(query);
 },
 
 }
@@ -165,59 +167,48 @@ function UploadToRedis(data, keyName) {
 // Redis -> S3 -> API
 function PersistanceRetrieval(keyName) {
 
+      var nameCount = 0;
+      const params = { Bucket: bucketName, Key: keyName};
+
       // Checks Redis Cache
       return redisClient.get(keyName, (err, redisResult) => {
         if (redisResult) {
             // Serve results from Redis
-            resultJSON = JSON.parse(redisResult);
-            return res.status(200).json(resultJSON);
+            resultJSON = redisResult;
+            console.log("REDIS  " + resultJSON);
+            return resultJSON;
         } else { //Serve from S3, if it's in S3 store it in Cache too
             return new AWS.S3({apiVersion: '2006-03-01'}).getObject(params, (err, s3Result) => {
                 if (s3Result) {
                     // Retrieve from S3
-                    //console.log(result);
-                    console.log("Successfully retrieved from S3")
-                    resultJSON = JSON.parse(s3Result.Body);
-                    //console.log(resultJSON);
+
+                    console.log("Successfully retrieved from S3");
+                    resultJSON = s3Result.Body.toString('utf-8');
 
                     
                     //Store in cache while we're here
                     //resultJSON.source = "Redis Cache";
-                    redisClient.setex(keyName, 3600, JSON.stringify({ ...resultJSON, source: 'Redis Cache', }));
+                    redisClient.setex(keyName, 3600, resultJSON);
                     console.log("Stored in Redis from S3 call");
 
                     //Serve results from S3
-                    return res.status(200).json(resultJSON);
+                    console.log(resultJSON);
+                    return resultJSON;
         
-                } else { //It's not in Cache and S3, time to retrieve from wikipedia
+                } else { //It's not in Cache and S3, time to retrieve from Twitter
 
-                        // Retrieving from Wikipedia 
-                        return axios.get(searchUrl)
-                            .then(urlResult => {
-                                responseJSON = urlResult.data;
-                                //Store in cache
-                                redisClient.setex(keyName, 3600, JSON.stringify({ source: 'Redis Cache', ...responseJSON, }));
-                                console.log("Stored in Redis from Wikipedia call");
-                                
-
-                                //Store in S3
-                                const body = JSON.stringify({ source: 'S3 Bucket', ...responseJSON});
-                                const objectParams = {Bucket: bucketName, Key: keyName, Body: body};
-                                const uploadPromise = new AWS.S3({apiVersion: '2006-03-01'}).putObject(objectParams).promise();
-                                uploadPromise.then(function(data) {
-                                    console.log("Successfully uploaded data to " + bucketName + "/" + keyName);
-                                });
-                                console.log("Stored in S3 from Wikipedia call");
-                                
-                                console.log("Successfully retreived from Wikipedia");
-                                //Output saying retrieveal is from Wikipedia
-                                return res.status(200).json({ source: 'Wikipedia API', ...responseJSON, });
-
-                            })
-                            .catch(err => {
-                                return res.json(err);
-                            });
-
+                        // Retrieving from Twitter
+                        client.stream('statuses/filter',{track:keyName, language:'en'},function(stream) {
+                          stream.on('data', function(tweet) {
+                            console.log("API From inside persistence:   " + tweet.text + "\n\n");
+                            UploadToRedis(tweet.text, keyName + nameCount);
+                            UploadToS3(tweet.text, keyName + nameCount);
+                            nameCount++;
+                          });
+                          stream.on('error', function(error) {
+                            console.log(error);
+                          });
+                        });
                 }
             })
         }
