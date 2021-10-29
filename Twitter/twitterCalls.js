@@ -101,7 +101,7 @@ client.stream('statuses/filter',{track:query, language:'en'},function(stream) {
   stream.on('error', function(error) {
     console.log(error);
   });
-  PersistanceRetrieval(query);
+  //PersistanceRetrieval(query);
 }});
 },
 
