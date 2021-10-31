@@ -186,7 +186,17 @@ function PersistanceRetrieval(keyName) {
             params.Key = keyName + s3Count;
             try{
               const getS3 = await awsService.getObject(params).promise();
-              console.log(getS3.Body.toString('utf-8'))
+              var resultJSON =  getS3.Body.toString('utf-8');
+              cleanedTweetArray = resultJSON.split(" ");
+              tweetSentiment = analyser.getSentiment(cleanedTweet);
+              getAverage(tweetSentiment);
+              console.log("\n\n\n---------------------------\n" + "From S3: \n" + resultJSON + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
+              //Store in cache while we're here
+              UploadToRedis(resultJSON, keyName + s3Count);
+              console.log("Stored in Redis from S3 call \n");
+
+              //Serve results from S3
+              console.log("Successfully retrieved from S3:");
             }
             catch (err){
               s3Check = 1;
@@ -218,7 +228,7 @@ function PersistanceRetrieval(keyName) {
           stream.on('error', function(error) {
             console.log(error);
           });
-        });           
+      });           
       })
       ();
 }
