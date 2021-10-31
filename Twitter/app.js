@@ -7,6 +7,8 @@ const port = 3000;
 const app = express();
 const {close} = require('./twitterCalls.js')
 
+
+app.use(express.static(__dirname))
 app.get('/',function(req,res)
 {
     res.sendFile(__dirname+'/index.html');
@@ -16,10 +18,6 @@ app.listen(port, function () {
     fs.writeFileSync('test.json','[[0,0]]');
 });
 
-function sendJSON()
-{
-    res.sendFile(__dirname+'/test.json')
-}
 app.get('/data', function(req,res)
 {
     res.sendFile(__dirname+'/test.json')

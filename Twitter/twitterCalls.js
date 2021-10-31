@@ -85,41 +85,41 @@ var sentimentArray = [];
 //get Average Number of Sentiment Values
 function getAverage(number)
 {
-  switch(number)
+  if(number <0)
   {
-    case (number < 0):
-      number = -1
-      sentimentArray.push(number);
-      break;
-    case (number > 0):
-      number = 1
-      sentimentArray.push(number);
-      break;
-    case (number == 0):
-      number = 0
-      sentimentArray.push(number);
-      break;
+    number = -1
+    sentimentArray.push(number);
   }
-
+  else if (number > 0)
+  {
+    number = 1
+    sentimentArray.push(number);
+  }
+  else if (number == 0)
+  {
+    number = 0;
+    sentimentArray.push(number);
+  }
   console.log(number)
+  
   var sum = 0;
   for(var i = 0; i < sentimentArray.length; i++)
   {
     sum += sentimentArray[i]
   }
-
   sentimentAvg = sum/sentimentArray.length
-  switch(sentimentAvg)
+
+  if(sentimentAvg <0)
   {
-    case (sentimentAvg < 0):
-      sentimentAvg = -1
-      break;
-    case(sentimentAvg > 0):
-      sentimentAvg = 1;
-      break;
-    case(sentimentAvg == 0):
-      sentimentAvg = 0
-      break;
+    sentimentAvg = -1
+  }
+  else if (number > 0)
+  {
+    sentimentAvg = 1
+  }
+  else if (number == 0)
+  {
+    sentimentAvg = 0;
 
   }
 }
@@ -187,11 +187,13 @@ function PersistanceRetrieval(keyName) {
             try{
               const getS3 = await awsService.getObject(params).promise();
               var resultJSON =  getS3.Body.toString('utf-8');
-
+              console.log(resultJSON);
 
 
               cleanedTweetArray = resultJSON.split(" ");
-              tweetSentiment = analyser.getSentiment(cleanedTweet);
+              //console.log(cleanedTweetArray);
+              tweetSentiment = analyser.getSentiment(cleanedTweetArray);
+              console.log(tweetSentiment);
               getAverage(tweetSentiment);
               console.log("\n\n\n---------------------------\n" + "From S3: \n" + resultJSON + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
               
@@ -202,7 +204,6 @@ function PersistanceRetrieval(keyName) {
               //Serve results from S3
               console.log("Successfully retrieved from S3:");
               
-              console.log(resultJSON);
             }
             catch (err){
               s3Check = 1;
@@ -238,10 +239,6 @@ function PersistanceRetrieval(keyName) {
       })
       ();
 }
-
-
-
-
 
 
 
