@@ -30,9 +30,6 @@ redisClient.on('error', (err) => {
 //Promisify redis client get method
 const redisGetAsync = promisify(redisClient.get).bind(redisClient);
 
-//redisGetAsync.then(console.log).catch(console.log);
-
-
 // Cloud Services Set-up
 const bucketName = 'petercab432-assignment2';
 const awsService = new AWS.S3({apiVersion: '2006-03-01'})
@@ -60,19 +57,14 @@ var analyser = new Analyser("English", stemmer, "afinn");
 
 
 //Vars for S3 and Tweet stream (placeholders for now)
-let responseJSON;
 var x = 1;
 var sentimentAvg =0;
 var close = 0;
 var timer = null;
 var tweetSentiment;
-//Get tweets from Twitter stream then store in S3.
 
 module.exports = {
 getStream: function(query){
-var i = 1;
-var cleanedTweet;
-var cleanedTweetArray;
 close = 0;
 
 timer = setInterval(writeJson,1000)
@@ -88,51 +80,50 @@ closeStream: function()
 },
 
 }
+
 var sentimentArray = [];
+//get Average Number of Sentiment Values
 function getAverage(number)
 {
-  if(number <0)
+  switch(number)
   {
-    number = -1
-    sentimentArray.push(number);
+    case (number < 0):
+      number = -1
+      sentimentArray.push(number);
+      break;
+    case (number > 0):
+      number = 1
+      sentimentArray.push(number);
+      break;
+    case (number == 0):
+      number = 0
+      sentimentArray.push(number);
+      break;
   }
-  else if (number > 0)
-  {
-    number = 1
-    sentimentArray.push(number);
-  }
-  else if (number == 0)
-  {
-    number = 0;
-    sentimentArray.push(number);
-  }
+
   console.log(number)
-  
   var sum = 0;
   for(var i = 0; i < sentimentArray.length; i++)
   {
     sum += sentimentArray[i]
   }
+
   sentimentAvg = sum/sentimentArray.length
+  switch(sentimentAvg)
+  {
+    case (sentimentAvg < 0):
+      sentimentAvg = -1
+      break;
+    case(sentimentAvg > 0):
+      sentimentAvg = 1;
+      break;
+    case(sentimentAvg == 0):
+      sentimentAvg = 0
+      break;
 
-  if(sentimentAvg <0)
-  {
-    sentimentAvg = -1
-    //sentimentArray.push(number);
   }
-  else if (number > 0)
-  {
-    sentimentAvg = 1
-    //sentimentArray.push(number);
-  }
-  else if (number == 0)
-  {
-    sentimentAvg = 0;
-    //sentimentArray.push(number);
-  }
-
 }
-
+//Write to JSON file for graph data
 function writeJson()
 {
   fs.writeFileSync('test.json','[['+x+','+JSON.stringify(sentimentAvg)+']]');
@@ -149,8 +140,10 @@ function UploadToS3(data, keyName) {
   });
 }
 
+//Functioh that uploads data to Redis Cache
 function UploadToRedis(data, keyName) {
   redisClient.setex(keyName, 3600, data);
+  console.log("Succfully uploaded to Redis Cache")
 }
 
 
@@ -162,136 +155,72 @@ function PersistanceRetrieval(keyName) {
       var params = { Bucket: bucketName, Key: keyName + "0"};
       var redisCheck = 0;
       var s3Check = 0;
-      console.log('function is running??');
-      
-      console.log('does redis run ??');
+      //Runs a sequence Check for tweet data, Checks Redis<S3<Twitter
       (async () => {
         for (var redisCount = 0; redisCheck == 0; redisCount++) 
         {
           console.log("Made it inside For loop");
-          // Checks Redis Cache for a first "hit"
           const redisResult = await redisGetAsync(keyName + redisCount.toString());
-          //return redisClient.get(keyName + redisCount.toString(), (err, redisResult) => 
-          //{
-            //console.log(redisResult)
             console.log("Made it past the GET");
             if (redisResult) 
             {
-              //console.log('iterate');
                 // Serve results from Redis
                 //Sentiment analysis
                 cleanedTweetArray = redisResult.split(" ");
                 tweetSentiment = analyser.getSentiment(cleanedTweetArray);
                 getAverage(tweetSentiment);
                 console.log("\n\n\n---------------------------\n" + "From Redis: \n" + redisResult + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
-
             } 
             else 
             {
               redisCheck = 1;
             }
-            //console.log(err);
-          //})
         }
 
         if (redisCheck == 1) 
-      { //Serve from S3, if it's in S3 store it in Cache too
-        console.log('s3')
-
-        for (var s3Count = 0; s3Check == 0; s3Count++) 
-        { 
-          console.log("Inside S3 For Loop");
-          params.Key = keyName + s3Count;
-          // const s3Result = await awsService.getObject(params).promise()
-          //   .then( (s3result) => { console.log(s3result.Body.toString('utf-8'))}
-          //   )
-
-          //   .catch (error => 
-          //   {
-          //     if (error.statusCode === 404) {
-          //       console.log('we have logged the error ?') 
-          //       //console.log(error)
-          //       throw error
-          //     }
-
-          //   } 
-          //   )
+        {
+        //Serve from S3, if it's in S3 store it in Cache too
+          console.log("Checking S3 now")
+          for (var s3Count = 0; s3Check == 0; s3Count++) 
           {
-
-          }
-            // .finally(() => {
-            //   console.log('run twitter??')
-            // });
-          try{
-            const getS3 = await awsService.getObject(params).promise();
-            console.log(getS3.Body.toString('utf-8'))
-          }
-          catch (err){
-            //console.log(err);
-            //return err;
-            //throw err;
-            s3Check = 1;
+            params.Key = keyName + s3Count;
+            try{
+              const getS3 = await awsService.getObject(params).promise();
+              console.log(getS3.Body.toString('utf-8'))
+            }
+            catch (err){
+              s3Check = 1;
+            }
           }
         }
-        
-            //   if (s3Result) 
-            //   {
-            //     // Retrieve from S3
-            //     resultJSON = s3Result.Body.toString('utf-8');
+        //It's not in Cache and S3, time to retrieve from Twitter
+        console.log('Retriving From Twitter!!');
+        // Retrieving from Twitter
+        client.stream('statuses/filter',{track:keyName, language:'en'},function(stream) {
+          stream.on('data', function(tweet) {
 
-            //     //Sentiment analysis
-            //     cleanedTweetArray = resultJSON.split(" ");
-            //     tweetSentiment = analyser.getSentiment(cleanedTweetArray);
-            //     getAverage(tweetSentiment);
-            //     console.log("\n\n\n---------------------------\n" + "From S3: \n" + resultJSON + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
+            //Cleaning up Tweet
+            cleanedTweet = compromise(tweet.text);
+            cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').not("RT").not('#Time').not('#Date').not('#Expression').not('#PhoneNumber').not('#Money').normalize().text('reduced');
 
-              
-            //     //Store in cache while we're here
-            //     UploadToRedis(resultJSON, keyName + s3Count);
-            //     console.log("Stored in Redis from S3 call \n");
+            //Sentiment analysis
+            cleanedTweetArray = cleanedTweet.split(" ");
+            tweetSentiment = analyser.getSentiment(cleanedTweetArray);
+            getAverage(tweetSentiment);
 
-            //     //Serve results from S3
-            //     console.log("Successfully retrieved from S3:");
+            //Store in Perstistence storage
+            UploadToRedis(cleanedTweet, keyName + nameCount);
+            UploadToS3(cleanedTweet, keyName + nameCount);
 
-            //   }
-            // ) 
-
-              // else 
-              // {
-              //   s3Check = 1;
-              // }
-          
-
-          //})
-        //}
-      }
-      //It's not in Cache and S3, time to retrieve from Twitter
-      console.log('twitter!!');
-      // Retrieving from Twitter
-      client.stream('statuses/filter',{track:keyName, language:'en'},function(stream) {
-        stream.on('data', function(tweet) {
-
-          //Cleaning up Tweet
-          cleanedTweet = compromise(tweet.text);
-          cleanedTweet = cleanedTweet.not('#url').not('#HashTag').not('#AtMention').not("RT").not('#Time').not('#Date').not('#Expression').not('#PhoneNumber').not('#Money').normalize().text('reduced');
-          //Sentiment analysis
-          cleanedTweetArray = cleanedTweet.split(" ");
-          tweetSentiment = analyser.getSentiment(cleanedTweetArray);
-          getAverage(tweetSentiment);
-          //Store in Perstistence storage
-          UploadToRedis(cleanedTweet, keyName + nameCount);
-          UploadToS3(cleanedTweet, keyName + nameCount);
-
-          //Naming convention interation
-          nameCount++;
-        });
-        stream.on('error', function(error) {
-          console.log(error);
-        });
-      });           
-      })();
-          
-      
+            //Naming convention interation
+            nameCount++;
+          });
+          stream.on('error', function(error) {
+            console.log(error);
+          });
+        });           
+      })
+      ();
 }
 
 
