@@ -202,43 +202,71 @@ function PersistanceRetrieval(keyName) {
         { 
           console.log("Inside S3 For Loop");
           params.Key = keyName + s3Count;
-          const s3Result = await awsService.getObject(params).promise()
+          // const s3Result = await awsService.getObject(params).promise()
+          //   .then( (s3result) => { console.log(s3result.Body.toString('utf-8'))}
+          //   )
 
-          try {
-            if (s3Result) 
-            {
-              // Retrieve from S3
-              resultJSON = s3Result.Body.toString('utf-8');
+          //   .catch (error => 
+          //   {
+          //     if (error.statusCode === 404) {
+          //       console.log('we have logged the error ?') 
+          //       //console.log(error)
+          //       throw error
+          //     }
 
-              //Sentiment analysis
-              cleanedTweetArray = resultJSON.split(" ");
-              tweetSentiment = analyser.getSentiment(cleanedTweetArray);
-              getAverage(tweetSentiment);
-              console.log("\n\n\n---------------------------\n" + "From S3: \n" + resultJSON + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
+          //   } 
+          //   )
+          {
 
-            
-              //Store in cache while we're here
-              UploadToRedis(resultJSON, keyName + s3Count);
-              console.log("Stored in Redis from S3 call \n");
-
-              //Serve results from S3
-              console.log("Successfully retrieved from S3:");
-
-            } 
-
-          } catch(err) {
-
-            //else 
-            //{
-              s3Check = 1;
-            //}
           }
+            // .finally(() => {
+            //   console.log('run twitter??')
+            // });
+          try{
+            const getS3 = await awsService.getObject(params).promise();
+            console.log(getS3.Body.toString('utf-8'))
+          }
+          catch (err){
+            //console.log(err);
+            //return err;
+            //throw err;
+            s3Check = 1;
+          }
+        }
+        
+            //   if (s3Result) 
+            //   {
+            //     // Retrieve from S3
+            //     resultJSON = s3Result.Body.toString('utf-8');
+
+            //     //Sentiment analysis
+            //     cleanedTweetArray = resultJSON.split(" ");
+            //     tweetSentiment = analyser.getSentiment(cleanedTweetArray);
+            //     getAverage(tweetSentiment);
+            //     console.log("\n\n\n---------------------------\n" + "From S3: \n" + resultJSON + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
+
+              
+            //     //Store in cache while we're here
+            //     UploadToRedis(resultJSON, keyName + s3Count);
+            //     console.log("Stored in Redis from S3 call \n");
+
+            //     //Serve results from S3
+            //     console.log("Successfully retrieved from S3:");
+
+            //   }
+            // ) 
+
+              // else 
+              // {
+              //   s3Check = 1;
+              // }
+          
 
           //})
-        }
+        //}
       }
       //It's not in Cache and S3, time to retrieve from Twitter
-      console.log('twitter!!')
+      console.log('twitter!!');
       // Retrieving from Twitter
       client.stream('statuses/filter',{track:keyName, language:'en'},function(stream) {
         stream.on('data', function(tweet) {
