@@ -143,7 +143,7 @@ function UploadToS3(data, keyName) {
 //Functioh that uploads data to Redis Cache
 function UploadToRedis(data, keyName) {
   redisClient.setex(keyName, 3600, data);
-  console.log("Succfully uploaded to Redis Cache")
+  console.log("Successfully uploaded to Redis Cache")
 }
 
 
@@ -187,16 +187,22 @@ function PersistanceRetrieval(keyName) {
             try{
               const getS3 = await awsService.getObject(params).promise();
               var resultJSON =  getS3.Body.toString('utf-8');
+
+
+
               cleanedTweetArray = resultJSON.split(" ");
               tweetSentiment = analyser.getSentiment(cleanedTweet);
               getAverage(tweetSentiment);
               console.log("\n\n\n---------------------------\n" + "From S3: \n" + resultJSON + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
+              
               //Store in cache while we're here
               UploadToRedis(resultJSON, keyName + s3Count);
               console.log("Stored in Redis from S3 call \n");
 
               //Serve results from S3
               console.log("Successfully retrieved from S3:");
+              
+              console.log(resultJSON);
             }
             catch (err){
               s3Check = 1;
