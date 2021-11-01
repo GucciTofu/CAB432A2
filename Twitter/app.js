@@ -21,14 +21,10 @@ app.listen(port, function () {
 app.get('/data', function(req,res)
 {
     res.sendFile(__dirname+'/test.json')
-    //setInterval(sendJSON(),10000)
 });
 
 app.post('/search',encoder,function(req,res)
 {
-    //console.log(req)
-    //twitter.writeJson();
-    //console.log(twitter.getStream.close)
     console.log("close variable"+twitter.close);
     var query = req.body.query
     twitter.getStream(query);

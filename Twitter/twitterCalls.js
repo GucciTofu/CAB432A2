@@ -22,7 +22,7 @@ var client = new twitter({
 
 
 //Create Redis Client - This section will change for Cloud Services
-const redisClient = redis.createClient();
+const redisClient = redis.createClient({host:"peterandrewa2.km2jzi.ng.0001.apse2.cache.amazonaws.com", port:"6743204"});
 redisClient.on('error', (err) => {
     console.log("Error " + err);
 });
@@ -181,7 +181,7 @@ function PersistanceRetrieval(keyName) {
         {
         //Serve from S3, if it's in S3 store it in Cache too
           console.log("Checking S3 now")
-          for (var s3Count = 0; s3Check == 0; s3Count++) 
+          for (var s3Count = 0; s3Check == 0 && close == 0 ; s3Count++) 
           {
             params.Key = keyName + s3Count;
             try{
@@ -231,6 +231,11 @@ function PersistanceRetrieval(keyName) {
 
             //Naming convention interation
             nameCount++;
+            if (close == 1)
+            {
+              stream.destroy();
+              console.log("stream close")
+            }
           });
           stream.on('error', function(error) {
             console.log(error);
