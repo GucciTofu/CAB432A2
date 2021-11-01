@@ -21,8 +21,9 @@ var client = new twitter({
 
 
 
-//Create Redis Client - This section will change for Cloud Services
-const redisClient = redis.createClient({host:"peterandrewa2.km2jzi.ng.0001.apse2.cache.amazonaws.com", port:"6743204"});
+//Create Redis Client
+const redisClient = redis.createClient({host:"peterandrewa2.km2jzi.ng.0001.apse2.cache.amazonaws.com", port:"6743204"}); //cloud
+//const redisClient = redis.createClient(); //Local
 redisClient.on('error', (err) => {
     console.log("Error " + err);
 });
@@ -140,7 +141,7 @@ function UploadToS3(data, keyName) {
   });
 }
 
-//Functioh that uploads data to Redis Cache
+//Function that uploads data to Redis Cache
 function UploadToRedis(data, keyName) {
   redisClient.setex(keyName, 3600, data);
   console.log("Successfully uploaded to Redis Cache")
@@ -223,7 +224,11 @@ function PersistanceRetrieval(keyName) {
             //Sentiment analysis
             cleanedTweetArray = cleanedTweet.split(" ");
             tweetSentiment = analyser.getSentiment(cleanedTweetArray);
+            console.log("\n\n\n---------------------------\n" + "Original: \n" + tweet.text + "\nCleaned:\n" + cleanedTweet + "\n*** " + tweetSentiment + " *** <-- Sentiment Value" + "\n---------------------------");
+
             getAverage(tweetSentiment);
+
+            
 
             //Store in Perstistence storage
             UploadToRedis(cleanedTweet, keyName + nameCount);
